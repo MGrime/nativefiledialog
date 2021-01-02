@@ -22,10 +22,13 @@ if not _OPTIONS["linux_backend"] then
    _OPTIONS["linux_backend"] = "gtk3"
 end
 
-workspace "NativeFileDialog"
-  -- these dir specifications assume the generated files have been moved
+project "nfd"
+    kind "StaticLib"
+	staticruntime "On"
+	
+	-- these dir specifications assume the generated files have been moved
   -- into a subdirectory.  ex: $root/build/makefile
-  local root_dir = path.join(path.getdirectory(_SCRIPT),"../../")
+  local root_dir = path.join(path.getdirectory(_SCRIPT),"../")
   local build_dir = path.join(root_dir,"build/")
   configurations { "Release", "Debug" }
 
@@ -58,8 +61,6 @@ workspace "NativeFileDialog"
     defines {"NDEBUG"}
     optimize "On"
 
-  project "nfd"
-    kind "StaticLib"
 
     -- common files
     files {root_dir.."src/*.h",
@@ -98,168 +99,3 @@ workspace "NativeFileDialog"
     -- visual studio filters
     filter "action:vs*"
       defines { "_CRT_SECURE_NO_WARNINGS" }      
-
-local make_test = function(name)
-  project(name)
-    kind "ConsoleApp"
-    language "C"
-    dependson {"nfd"}
-    targetdir(build_dir.."/bin")
-    files {root_dir.."test/"..name..".c"}
-    includedirs {root_dir.."src/include/"}
-
-
-    filter {"configurations:Debug", "architecture:x86_64"}
-      links {"nfd_d"}
-      libdirs {build_dir.."/lib/Debug/x64"}
-
-    filter {"configurations:Debug", "architecture:x86"}
-      links {"nfd_d"}
-      libdirs {build_dir.."/lib/Debug/x86"}
-
-    filter {"configurations:Release", "architecture:x86_64"}
-      links {"nfd"}
-      libdirs {build_dir.."/lib/Release/x64"}
-
-    filter {"configurations:Release", "architecture:x86"}
-      links {"nfd"}
-      libdirs {build_dir.."/lib/Release/x86"}
-
-    filter {"configurations:Debug"}
-      targetsuffix "_d"
-
-    filter {"configurations:Release", "system:linux", "options:linux_backend=gtk3"}
-      linkoptions {"-lnfd `pkg-config --libs gtk+-3.0`"}
-    filter {"configurations:Release", "system:linux", "options:linux_backend=zenity"}
-      linkoptions {"-lnfd"}
-
-    filter {"system:macosx"}
-      links {"Foundation.framework", "AppKit.framework"}
-      
-    filter {"configurations:Debug", "system:linux", "options:linux_backend=gtk3"}
-      linkoptions {"-lnfd_d `pkg-config --libs gtk+-3.0`"}
-    filter {"configurations:Debug", "system:linux", "options:linux_backend=zenity"}
-      linkoptions {"-lnfd_d"}
-
-
-
-    filter {"action:gmake", "system:windows"}
-      links {"ole32", "uuid"}
-
-end
-
-make_test("test_pickfolder")
-make_test("test_opendialog")
-make_test("test_opendialogmultiple")
-make_test("test_savedialog")
-
-newaction
-{
-   trigger = "dist",
-   description = "Create distributable premake dirs (maintainer only)",
-   execute = function()
-
-
-      local premake_do_action = function(action,os_str,special,args)
-         local premake_dir
-         if special then
-            if args['linux_backend'] ~= nil then
-               premake_dir = "./"..action.."_"..os_str..'_zenity'
-            else
-               premake_dir = "./"..action.."_"..os_str
-            end
-         else
-            premake_dir = "./"..action
-         end
-         local premake_path = premake_dir.."/premake5.lua"
-
-         -- create an args str to pass along to premake
-         arg_str = ''
-         for arg, val in pairs(args) do
-            arg_str = ' --'..arg..'='..val
-         end
-
-         os.execute("mkdir "..premake_dir)
-         os.execute("cp premake5.lua "..premake_dir)
-         os.execute("premake5 --os=" ..os_str..
-                       " --file="..premake_path..
-                       arg_str..
-                       " "..action)
-         os.execute("rm "..premake_path)
-      end
-      
-      premake_do_action("vs2010", "windows", false,{})
-      premake_do_action("xcode4", "macosx", false,{})
-      premake_do_action("gmake", "linux", true,{})
-      premake_do_action("gmake", "linux", true,{linux_backend='zenity'})
-      premake_do_action("gmake", "macosx", true,{})
-      premake_do_action("gmake", "windows", true,{})
-   end
-}
-
-newaction
-{
-    trigger     = "clean",
-    description = "Clean all build files and output",
-    execute = function ()
-
-        files_to_delete = 
-        {
-            "Makefile",
-            "*.make",
-            "*.txt",
-            "*.7z",
-            "*.zip",
-            "*.tar.gz",
-            "*.db",
-            "*.opendb",
-            "*.vcproj",
-            "*.vcxproj",
-            "*.vcxproj.user",
-            "*.vcxproj.filters",
-            "*.sln",
-            "*~*"
-        }
-
-        directories_to_delete = 
-        {
-            "obj",
-            "ipch",
-            "bin",
-            ".vs",
-            "Debug",
-            "Release",
-            "release",
-            "lib",
-            "test",
-            "makefiles",
-            "gmake",
-            "vs2010",
-            "xcode4",
-            "gmake_linux",
-            "gmake_macosx",
-            "gmake_windows"
-        }
-
-        for i,v in ipairs( directories_to_delete ) do
-          os.rmdir( v )
-        end
-
-        if os.is "macosx" then
-           os.execute("rm -rf *.xcodeproj")
-           os.execute("rm -rf *.xcworkspace")
-        end
-
-        if not os.is "windows" then
-            os.execute "find . -name .DS_Store -delete"
-            for i,v in ipairs( files_to_delete ) do
-              os.execute( "rm -f " .. v )
-            end
-        else
-            for i,v in ipairs( files_to_delete ) do
-              os.execute( "del /F /Q  " .. v )
-            end
-        end
-
-    end
-}
