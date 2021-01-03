@@ -6,15 +6,15 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\common.h" />
-    <ClInclude Include="..\src\include\nfd.h">
+    <ClInclude Include="common.h" />
+    <ClInclude Include="include\nfd.h">
       <Filter>include</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\nfd_common.h" />
-    <ClInclude Include="..\src\simple_exec.h" />
+    <ClInclude Include="nfd_common.h" />
+    <ClInclude Include="simple_exec.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\nfd_common.c" />
-    <ClCompile Include="..\src\nfd_win.cpp" />
+    <ClCompile Include="nfd_common.c" />
+    <ClCompile Include="nfd_win.cpp" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,2 @@
+C:\dev\Screwpine\Screwpine\vendor\nfd\bin\Debug-windows-x86_64\nfd\nfd.pdb
+C:\dev\Screwpine\Screwpine\vendor\nfd\bin-int\Debug-windows-x86_64\nfd\nfd.pdb
